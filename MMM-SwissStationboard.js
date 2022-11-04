@@ -1,5 +1,7 @@
 /* global Module */
 
+// const { iteratee, transform } = require("lodash");
+
 /* Magic Mirror
  * Module: MMM-SwissStationboard
  *
@@ -109,7 +111,31 @@ Module.register("MMM-SwissStationboard",{
 					continue;
 				}
 			}
+
+			trainInteresting = false;
+			if(trains.number === "20" && trains.to === "Bern Wankdorf, Bahnhof"){
+				trainInteresting = true;
+			}
+
+			if(!trainInteresting){
+				continue;
+			}
 			
+			trainDelay = 0;
+			if(trains.delay > 0){
+				trainDelay = trains.delay;
+			}
+			soonClass = "";
+			if(trainInteresting){
+				if (diff + trainDelay < 5) {
+					soonClass = "run";
+				} else if (diff + trainDelay < 7) {
+					soonClass = "hurry";
+				} else {
+					soonClass = "chill";
+				}
+			}
+
 			displayedConnections++;
 			if (displayedConnections > this.config.maximumEntries){
 				break;
@@ -118,11 +144,15 @@ Module.register("MMM-SwissStationboard",{
 			table.appendChild(row);
 			
 			// Time
-			
-
 			var depCell = document.createElement("td");
-			depCell.className = "align-left departuretime";
-			depCell.innerHTML = trains.departureTimestamp;
+			depCell.className = "align-left departuretime " + soonClass;
+			if(trainInteresting && diff + trainDelay < 15){
+				depCell.className = "align-left departuretime " + soonClass;
+				depCell.innerHTML = Number(diff+trainDelay) + " min";
+			} else {
+				depCell.className = "align-left departuretime";
+				depCell.innerHTML = trains.departureTimestamp;
+			}
 
 			if(trains.delay > 0){
 				if (diff + trains.delay < this.config.minWalkingTime ){
@@ -148,7 +178,8 @@ Module.register("MMM-SwissStationboard",{
 			// Number
 			var trainNumberCell = document.createElement("td");
 			if (trains.type.localeCompare("bus")==0 || trains.type.localeCompare("post")==0){
-				trainNumberCell.innerHTML = "<i class=\"fa fa-bus\"></i> " + trains.number;
+				var space = Number(trains.number) >= 100 ? "" : " ";
+				trainNumberCell.innerHTML = "<i class=\"fa fa-bus\"></i>"+ space + trains.number;
 			} else if(trains.type.localeCompare("tram")==0){
 				trainNumberCell.innerHTML = "<i class=\"fa fa-subway\"></i> " + trains.number;
 			}else if(trains.type.localeCompare("strain")==0 || trains.type.localeCompare("express_train")==0 || trains.type.localeCompare("train")==0){
@@ -156,7 +187,11 @@ Module.register("MMM-SwissStationboard",{
 			}else{
 				trainNumberCell.innerHTML = "<i class=\"fa fa-rocket\"></i> " + trains.number;
 			}
-			trainNumberCell.className = "align-left";
+			if(trainInteresting) {
+				trainNumberCell.className = "align-left train-good-direction";
+			} else {
+				trainNumberCell.className = "align-left";
+			}
 			row.appendChild(trainNumberCell);
 			
 			// Track
@@ -171,7 +206,11 @@ Module.register("MMM-SwissStationboard",{
 			// Direction
 			var trainToCell = document.createElement("td");
 			trainToCell.innerHTML = trains.to;
-			trainToCell.className = "align-right trainto";
+			if(trainInteresting){
+				trainToCell.className = "align-right trainto train-good-direction";
+			} else {
+				trainToCell.className = "align-right trainto";
+			}
 			row.appendChild(trainToCell);
 
 			
